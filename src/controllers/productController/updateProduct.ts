@@ -1,80 +1,98 @@
 import { isValid, parse } from 'date-fns';
 import { Request, Response } from "express";
+import { JwtPayload } from "jsonwebtoken";
 import prisma from "../../prisma";
+import { product } from "../../schemas/Product";
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
+  token?: JwtPayload | string;
   params: {
     id: string;
   };
 }
 
-export default async function updateProduct(req: MulterRequest, res: Response): Promise<void> {
+export default async function updateProduct(req: MulterRequest, res: Response) {
+  const { id } = req.params;
+  
   try {
-    const { id } = req.params;
-    const imageBuffer = req.file ? req.file.buffer : undefined;
-
-    // Check if product exists
-    const existingProduct = await prisma.product.findUnique({
-      where: { id }
+    // Parse the request data with validation
+    const parsedData = product.parse({
+      ...req.body,
+      price: Number(req.body.price),
+      quantity: Number(req.body.quantity),
+      category: req.body.category === 'true' || req.body.category === true
     });
 
-    if (!existingProduct) {
-      res.status(404).json({ error: "Product not found" });
+    // Check if image is provided
+    if (!req.file) {
+      res.status(400).json({
+        error: 'Image is required'
+      });
       return;
     }
 
-    // Parse and validate the request body
-    const bodyData = {
-      ...req.body,
-      price: req.body.price ? Number(req.body.price) : undefined,
-      quantity: req.body.quantity ? Number(req.body.quantity) : undefined,
-      category: req.body.category !== undefined ? req.body.category === 'true' || req.body.category === true : undefined
-    };
-
-    // Process date if provided
-    let dateObj: Date | undefined;
-    if (req.body.date) {
-      try {
-        dateObj = parse(req.body.date, 'dd/MM/yyyy', new Date());
-        if (!isValid(dateObj)) {
-          throw new Error("Invalid date");
-        }
-      } catch (error) {
-        res.status(400).json({ 
-          error: "Invalid date format. Please use DD/MM/YYYY" 
-        });
-        return;
-      }
+    // Verify file is an image
+    if (!req.file.mimetype.startsWith('image/')) {
+      res.status(400).json({
+        error: 'File must be an image'
+      });
+      return;
     }
 
-    // Build update data with only provided fields
-    const updateData: any = {};
-    if (bodyData.name !== undefined) updateData.name = bodyData.name;
-    if (bodyData.description !== undefined) updateData.description = bodyData.description;
-    if (bodyData.quantity !== undefined) updateData.quantity = bodyData.quantity;
-    if (bodyData.price !== undefined) updateData.price = bodyData.price;
-    if (dateObj !== undefined) updateData.date = dateObj;
-    if (bodyData.category !== undefined) updateData.category = bodyData.category;
-    if (imageBuffer !== undefined) updateData.image = imageBuffer;
+    // Check if product exists
+    const oldProduct = await prisma.product.findUnique({
+      where: { id: id }
+    });
+      
+    if (!oldProduct) {
+      res.status(404).json({
+        error: 'Product not found'
+      });
+      return;
+    }
+
+    // Parse date
+    let dateObj: Date;
+    try {
+      dateObj = parse(req.body.date, 'dd/MM/yyyy', new Date());
+      if (!isValid(dateObj)) {
+        throw new Error("Invalid date");
+      }
+    } catch (error) {
+      res.status(400).json({ 
+        error: "Invalid date format. Please use DD/MM/YYYY" 
+      });
+      return;
+    }
+
+    // Get image buffer
+    const imageBuffer = req.file.buffer;
 
     // Update the product
     const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: updateData
-    });
-
-    res.status(200).json({ 
-      message: "Product updated successfully", 
-      product: {
-        ...updatedProduct,
-        image: updatedProduct.image ? "Binary image data" : null
+      where: { id: id },
+      data: {
+        name: parsedData.name,
+        description: parsedData.description || "",
+        quantity: parsedData.quantity,
+        price: parsedData.price,
+        date: dateObj,
+        category: parsedData.category,
+        image: imageBuffer
       }
     });
-  } catch (error) {
-    console.error("Error updating product:", error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : "An error occurred while updating the product" 
+    
+    // Return the updated product (without binary image data)
+    res.json({
+      ...updatedProduct,
+      image: updatedProduct.image ? "Binary image data" : null
     });
+  } catch (error) {
+    // Log the error
+    console.error("Error updating product:", error);
+    
+    // Return error response
+    res.status(400).json({ error: (error as Error).message });
   }
 }

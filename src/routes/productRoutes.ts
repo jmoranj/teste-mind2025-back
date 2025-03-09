@@ -8,8 +8,8 @@ import upload from "../middleware/storageFile";
 const productRouter = Router()
 
 productRouter.post('/', upload.single('image'), addProduct)
-productRouter.get('/', getProducts)
-productRouter.put('/:id', updateProduct)
+productRouter.get('/:id', getProducts)
+productRouter.put('/:id',upload.single('image'), updateProduct)
 productRouter.delete('/:id', deleteProduct)
 
 export default productRouter

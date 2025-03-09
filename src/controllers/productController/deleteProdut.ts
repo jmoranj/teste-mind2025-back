@@ -2,32 +2,19 @@ import { Request, Response } from "express";
 import prisma from "../../prisma";
 
 export default async function deleteProduct(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-
-    // Check if product exists
+    // Find the product
     const product = await prisma.product.findUnique({
-      where: { id }
+      where: { id: id } // No Number() conversion needed for string UUID
     });
 
-    if (!product) {
-      res.status(404).json({ error: "Product not found" });
-      return;
-    }
+    // The image data is deleted automatically when the product is deleted
 
     // Delete the product
-    await prisma.product.delete({
-      where: { id }
-    });
-
-    res.status(200).json({ 
-      message: "Product deleted successfully",
-      id
-    });
+    await prisma.product.delete({ where: { id: id } });
+    res.json({ message: 'Product deleted successfully' });
   } catch (error) {
-    console.error("Error deleting product:", error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : "An error occurred while deleting the product" 
-    });
+    res.status(404).json({ message: 'Product not found' });
   }
 }

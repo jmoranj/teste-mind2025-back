@@ -1,0 +1,31 @@
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+
+// Remove the Promise<void> return type to avoid TypeScript errors
+export default async function refreshToken(req: Request, res: Response) {
+  const { refreshToken } = req.cookies;
+
+  if (!refreshToken) {
+    res.status(401).json({ message: 'Refresh token missing' });
+    return
+  }
+
+  try {
+    // Use the same secret format for consistency
+    const decoded = jwt.verify(refreshToken, "HARDCODED-SECRET-FOR-TESTING-123456789");
+    const userId = (decoded as any).userId; // Changed to match your token structure
+
+    // Create new access token with the same secret
+    const newAccessToken = jwt.sign(
+      { userId: userId }, 
+      "HARDCODED-SECRET-FOR-TESTING-123456789",
+      { expiresIn: "1h" }
+    );
+    
+    res.json({ token: newAccessToken });
+  } catch (error) {
+    console.log(error);
+    res.status(403).json({ message: 'Invalid refresh token' });
+    return
+  }
+}

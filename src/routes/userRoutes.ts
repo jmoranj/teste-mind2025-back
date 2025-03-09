@@ -1,12 +1,19 @@
 import { Router } from "express";
-import loginUser from "../controllers/userController/login";
-import logoutUser from "../controllers/userController/logout";
+import login from "../controllers/userController/login";
+import logout from "../controllers/userController/logout";
+import refreshToken from "../controllers/userController/refreshToken";
 import registerUser from "../controllers/userController/register";
+import userById from "../controllers/userController/userById";
+import validateJwt from "../controllers/userController/validateJwt";
+
 
 const userRouter = Router()
 
 userRouter.post('/register', registerUser);
-userRouter.post('/login', loginUser);
-userRouter.get('/logout', logoutUser)
+userRouter.post('/login', login);
+userRouter.get('/validate-jwt', validateJwt);
+userRouter.get('/logout', logout);
+userRouter.get('/refresh-token', refreshToken); 
+userRouter.get('/:id', userById);
 
 export default userRouter
