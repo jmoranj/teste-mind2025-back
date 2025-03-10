@@ -28,8 +28,12 @@ app.use(session({
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: 'http://localhost:3000', // Your frontend URL
+  credentials: true
+}));
+
 app.use('/user', userRouter)
 app.use('/product', productRouter)
-app.use(cors())
 
 export default app

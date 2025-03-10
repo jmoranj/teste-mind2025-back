@@ -1,31 +1,26 @@
 import { Request, Response } from "express";
-import { JwtPayload } from "jsonwebtoken";
-import { CustomRequest } from "../../middleware/auth";
 import prisma from "../../prisma";
 
 export default async function getProducts(req: Request, res: Response): Promise<void> {
-  const { token } = req as CustomRequest;
-
-  if (!token) {
-    res.status(401).json({ error: 'Unauthorized' });
-  }
-
   try {
-    const decoded = token as JwtPayload;
-    const userId = decoded.userId; // Assuming your token has userId field
+    const { id } = req.params; // Get userId from URL parameters
+    
+    // Verify the id exists
+    if (!id) {
+      res.status(400).json({ error: 'User ID is required' });
+      // ⬆️ Add  here to prevent further execution
+    }
 
+    // Fetch products for this user
     const products = await prisma.product.findMany({
-      where: { userId: userId }
+      where: { userId: id }
     });
 
-    // Don't send binary image data in the response
-    const productsWithoutImageData = products.map(product => ({
-      ...product,
-      image: product.image ? "Binary image data" : null
-    }));
-
-    res.json(productsWithoutImageData);
+    res.json(products);
+    // ⬆️ Add  here to be explicit about ending execution
   } catch (error) {
+    console.error("Error fetching products:", error);
     res.status(500).json({ error: (error as Error).message });
+    // ⬆️ Add  here as well
   }
 }
