@@ -11,14 +11,14 @@ export default async function refreshToken(req: Request, res: Response) {
   }
 
   try {
-    // Use the same secret format for consistency
-    const decoded = jwt.verify(refreshToken, "HARDCODED-SECRET-FOR-TESTING-123456789");
-    const userId = (decoded as any).userId; // Changed to match your token structure
+    const secret = process.env.REFRESH_TOKEN_SECRET || "fallback-secret-key"
+    const decoded = jwt.verify(refreshToken, secret as jwt.Secret);
+    const userId = (decoded as any).userId;
 
     // Create new access token with the same secret
     const newAccessToken = jwt.sign(
       { userId: userId }, 
-      "HARDCODED-SECRET-FOR-TESTING-123456789",
+      secret as jwt.Secret,
       { expiresIn: "1h" }
     );
     

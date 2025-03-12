@@ -38,15 +38,12 @@ export default async function login(req: Request, res: Response) {
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error("⚠️ WARNING: JWT_SECRET not set in environment variables");
-    }
+    const secret = process.env.JWT_SECRET || "fallback-secret-key";
     
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      "HARDCODED-SECRET-FOR-TESTING-123456789", // Use this exact string
+      secret, // Use this exact string
       { expiresIn: "24h" }
     );
     console.log("✅ Login successful for user:", email);

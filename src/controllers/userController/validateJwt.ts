@@ -11,7 +11,8 @@ const validateJwt: RequestHandler = (req: Request, res: Response) => {
   }
 
   try {
-    const decoded = jwt.verify(token, "HARDCODED-SECRET-FOR-TESTING-123456789");
+    const secret = process.env.JWT_SECRET || "fallback-secret-key"
+    const decoded = jwt.verify(token, secret as jwt.Secret);
     res.json({ valid: true, decoded });
   } catch (error) {
     console.error('JWT Validation Error:', error);
