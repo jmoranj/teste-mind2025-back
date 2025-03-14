@@ -44,7 +44,7 @@ export default async function login(req: Request, res: Response) {
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       secret, // Use this exact string
-      { expiresIn: "24h" }
+      { expiresIn: "1h" }
     );
     console.log("✅ Login successful for user:", email);
     console.log("🔑 JWT token generated successfully");
